@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <!-- socket -->
+    <script
+      src="https://cdn.socket.io/4.5.0/socket.io.min.js"
+      integrity="sha384-7EyYLQZgWBi67fBtVxw60/OWl1kjsfrPFcaU0pp0nAh+i8FD068QogUvg85Ewy1k"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://code.jquery.com/jquery-3.6.1.min.js"
+      integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ="
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://kit.fontawesome.com/c44f54db1d.js"
+      crossorigin="anonymous"
+    ></script>
+    <link rel="stylesheet" href="../static/css/style.css" />
+  </head>
+  <body>
+    <div id="change">
+      <div>
+        <h2><i class="fa-brands fa-rocketchat"></i> 채팅방 입장</h2>
+        <input type="text" id="nick" />
+        <button type="button" onclick="setNick()" id="entry" class="disabledF">
+          입장
+        </button>
+      </div>
+    </div>
+
+    <div class="container d-none">
+      <div class="chatView"></div>
+      <div id="inputArea">
+        <select id="dm">
+          <option value="all">전체</option>
+        </select>
+        <input type="text" id="msgIn" />
+        <button type="button" id="subBtn" onclick="onSubmit()">전송</button>
+      </div>
+    </div>
+
+    <script>
+      var socket = io.connect();
+      // var myMsg;
+
+      function setNick() {
+        var nickName = $("#nick").val();
+        socket.emit("setNick", nickName);
+      }
+      //입장성공
+      socket.on("entrySuccess", () => {
+        // console.log(sucMsg);
+        $(".container").removeClass("d-none");
+        $("#change").addClass("d-none");
+        $("#entry, #nick").attr("disabled", true);
+        $("#entry").removeClass("disabledF");
+        $("#entry").addClass("disabledT");
+        socketEvent();
+      });
+
+      //메세지 submit button click
+      function onSubmit() {
+        var myMsg = $("#msgIn").val();
+        var nickName = $("#nick").val();
+
+        // console.log(myMsg);
+        var nowHMS = new Date();
+        console.log(nowHMS.toLocaleTimeString());
+
+        var data = {
+          dm: $("#dm").val(),
+          msg: myMsg,
+          nick: nickName,
+          HMS: nowHMS.toLocaleTimeString(),
+        };
+        socket.emit("sendMSG", data);
+        // console.log("sendMSG", data);
+      }
+
+      //입장 성공했을시에만 작동하게
+      function socketEvent() {
+        // 입장 메세지
+        socket.on("notice", (id) => {
+          $(".chatView").append(`
+            <div class="notice">
+            ${id} 님이 입장했습니다.
+            </div>
+          `);
+        });
+
+        // 채팅 메세지
+        socket.on("chatSend", (msg) => {
+          var myMsg = $("#msgIn").val();
+          var className;
+
+          console.log(msg.HMS);
+
+          if (myMsg == msg.msg) {
+            className = "myMsgArea";
+          } else {
+            className = "otherMsgArea";
+          }
+
+          $(".chatView").append(`
+              <div contenteditable class="chatList ${className} ${msg.dm}">
+                <span class="idString">${msg.nick}</span> : ${msg.msg}
+                <span class="date right left">${msg.HMS}</span>
+              </div>
+            `);
+        });
+
+        socket.on("clientUpdate", (client) => {
+          var option = `<option value="all">전체</option>`;
+          //client안의 key의 수 많큼 반복
+          for (var key in client) {
+            if (client[key] != $("#nick").val()) {
+              option += `<option value="${key}">${client[key]}</option>`;
+            }
+          }
+          $("#dm").html(option);
+        });
+      }
+
+      socket.on("err", (errMsg) => {
+        alert(errMsg);
+      });
+    </script>
+  </body>
+</html>
