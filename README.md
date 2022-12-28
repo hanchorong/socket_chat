@@ -19,3 +19,9 @@
 - node.js
 - ejs
 - socket.io
+
+
+
+### 👇 자세한 내용 확인하기 👇 ###
+
+https://choronghan.notion.site/Chatting-39baaca5627f447dba5632a63d574ceb
